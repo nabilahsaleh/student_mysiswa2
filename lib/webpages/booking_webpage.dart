@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
 
 class BookingWebPage extends StatefulWidget {
   const BookingWebPage({super.key});
@@ -26,8 +27,16 @@ class _BookingWebPageState extends State<BookingWebPage> {
     '3:30 - 4:30',
   ];
 
-// Method to save booking data
+  // Method to save booking data
   void _bookSlot() async {
+    final currentUser = FirebaseAuth.instance.currentUser; // Get the current user
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('You need to be logged in to book an appointment.')),
+      );
+      return;
+    }
+
     if (_formKey.currentState!.validate() && _selectedTimeSlot.isNotEmpty) {
       final booking = {
         'name': _name,
@@ -35,6 +44,7 @@ class _BookingWebPageState extends State<BookingWebPage> {
         'date': _selectedDate,
         'timeSlot': _selectedTimeSlot,
         'status': 'scheduled',
+        'userId': currentUser.uid, // Include user ID
       };
 
       // Save booking to Firestore
@@ -59,6 +69,12 @@ class _BookingWebPageState extends State<BookingWebPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF9BBFDD),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF9BBFDD),
+        title: const Center(
+          child: Text('B O O K I N G'),
+        ),
+      ),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
