@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 
 class AppointmentWebPage extends StatefulWidget {
+  const AppointmentWebPage({Key? key}) : super(key: key);
+
   @override
   _AppointmentWebPageState createState() => _AppointmentWebPageState();
 }
@@ -17,14 +18,8 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
   }
 
   void _setUpFirestoreListener() {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
-      throw Exception('User not logged in.');
-    }
-
     _appointmentStream = FirebaseFirestore.instance
         .collection('bookings')
-        .where('userId', isEqualTo: currentUser.uid)
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -42,7 +37,9 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF9BBFDD),
         title: const Center(
-          child: Text('A P P O I N T M E N T'),
+          child: Text(
+            'A P P O I N T M E N T ',
+          ),
         ),
       ),
       body: Padding(
@@ -58,19 +55,17 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
               return const Center(child: Text('No appointments found.'));
             }
 
-            final now = DateTime.now();
-            final upcomingAppointments = snapshot.data!.where((booking) {
-              final date = (booking['date'] as Timestamp).toDate();
-              return booking['status'] == 'scheduled' || 
-                     booking['status'] == 'in-progress' && date.isAfter(now);
-            }).toList();
-
-            final pastAppointments = snapshot.data!.where((booking) {
-              final date = (booking['date'] as Timestamp).toDate();
-              return booking['status'] == 'completed' || 
-                     booking['status'] == 'canceled' || 
-                     date.isBefore(now);
-            }).toList();
+            final upcomingAppointments = snapshot.data!
+                .where((booking) =>
+                    booking['status'] == 'scheduled' ||
+                    booking['status'] == 'in-progress')
+                .toList();
+            final pastAppointments = snapshot.data!
+                .where((booking) =>
+                    booking['status'] == 'canceled' ||
+                    booking['status'] == 'completed' ||
+                    booking['status'] == 'canceled by admin')
+                .toList();
 
             return SingleChildScrollView(
               child: Column(
@@ -89,6 +84,8 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
                       date: (appointment['date'] as Timestamp).toDate(),
                       time: appointment['timeSlot'],
                       status: appointment['status'],
+                      isUpcoming: true,
+                      appointmentId: appointment['id'],
                     ),
                   const SizedBox(height: 40),
                   const Text(
@@ -104,6 +101,8 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
                       date: (appointment['date'] as Timestamp).toDate(),
                       time: appointment['timeSlot'],
                       status: appointment['status'],
+                      isUpcoming: false,
+                      appointmentId: appointment['id'],
                     ),
                 ],
               ),
@@ -119,14 +118,10 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
     required DateTime date,
     required String time,
     required String status,
+    required bool isUpcoming,
+    required String appointmentId,
   }) {
     final formattedDate = "${date.day} ${_monthName(date.month)} ${date.year}";
-    
-    // Get screen width
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    // Define card width as a fraction of the screen width
-    final cardWidth = screenWidth * 0.9; // 90% of the screen width
 
     // Define a color based on the status
     Color statusColor;
@@ -138,6 +133,7 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
         statusColor = Colors.orange;
         break;
       case 'canceled':
+      case 'canceled by admin':
         statusColor = Colors.red;
         break;
       case 'completed':
@@ -147,33 +143,73 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
         statusColor = Colors.black;
     }
 
-    return Card(
-      color: const Color(0xFFC7DCED),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      elevation: 3,
-      child: SizedBox(
-        width: cardWidth,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Date: $formattedDate', style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 5),
-              Text('Time: $time', style: const TextStyle(fontSize: 16)),
-              const SizedBox(height: 5),
-              const Text(
-                'Location: Banggunan Sarjana, Bilik Peralatan Komputer',
-                style: TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 5),
-              Text(
-                'Status: $status',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: statusColor),
-              ),
-            ],
+    return Padding(
+      padding:
+          const EdgeInsets.symmetric(vertical: 8.0), // Adjust padding as needed
+      child: Container(
+        width: MediaQuery.of(context).size.width, // Responsive width
+        child: Card(
+          color: const Color(0xFFC7DCED),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          elevation: 3,
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Date: $formattedDate',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  'Time: $time',
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 5),
+                const Text(
+                  'Location: Banggunan Sarjana, Bilik Peralatan Komputer',
+                  style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  'Status: $status',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold, // Make the text bold
+                    color: statusColor, // Change the text color based on status
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                // Conditionally render buttons only for upcoming appointments that are not in-progress
+                if (isUpcoming && status != 'in-progress')
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          _showConfirmationDialog(
+                            context: context,
+                            title: 'Cancel Appointment',
+                            content:
+                                'Are you sure you want to cancel this appointment?',
+                            onConfirm: () {
+                              _cancelAppointment(context, appointmentId);
+                            },
+                          );
+                        },
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -182,8 +218,68 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
 
   String _monthName(int month) {
     const monthNames = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
     ];
     return monthNames[month - 1];
+  }
+
+  Future<void> _showConfirmationDialog({
+    required BuildContext context,
+    required String title,
+    required String content,
+    required VoidCallback onConfirm,
+  }) async {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(content),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+            ),
+            ElevatedButton(
+              child: const Text('Confirm'),
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+                onConfirm(); // Execute the confirmed action
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _cancelAppointment(
+      BuildContext context, String appointmentId) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('bookings')
+          .doc(appointmentId)
+          .update({'status': 'canceled'});
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Appointment canceled.')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to cancel appointment: $e')),
+      );
+    }
   }
 }
