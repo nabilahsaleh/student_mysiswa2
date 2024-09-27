@@ -44,7 +44,7 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(25.0),
-        child: StreamBuilder<List<Map<String, dynamic>>>(
+        child: StreamBuilder<List<Map<String, dynamic>>>( 
           stream: _appointmentStream,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -57,14 +57,14 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
 
             final upcomingAppointments = snapshot.data!
                 .where((booking) =>
-                    booking['status'] == 'scheduled' ||
-                    booking['status'] == 'in-progress')
+                    booking['status'] == 'scheduled')
                 .toList();
             final pastAppointments = snapshot.data!
                 .where((booking) =>
                     booking['status'] == 'canceled' ||
                     booking['status'] == 'completed' ||
-                    booking['status'] == 'canceled by admin')
+                    booking['status'] == 'canceled by admin' ||
+                    booking['status'] == 'missed')
                 .toList();
 
             return SingleChildScrollView(
@@ -129,7 +129,7 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
       case 'scheduled':
         statusColor = Colors.blue;
         break;
-      case 'in-progress':
+      case 'missed':
         statusColor = Colors.orange;
         break;
       case 'canceled':
@@ -144,8 +144,7 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
     }
 
     return Padding(
-      padding:
-          const EdgeInsets.symmetric(vertical: 8.0), // Adjust padding as needed
+      padding: const EdgeInsets.symmetric(vertical: 8.0), // Adjust padding as needed
       child: Container(
         width: MediaQuery.of(context).size.width, // Responsive width
         child: Card(
@@ -184,8 +183,8 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
                 ),
                 const SizedBox(height: 10),
 
-                // Conditionally render buttons only for upcoming appointments that are not in-progress
-                if (isUpcoming && status != 'in-progress')
+                // Conditionally render buttons only for upcoming appointments
+                if (isUpcoming)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -194,8 +193,7 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
                           _showConfirmationDialog(
                             context: context,
                             title: 'Cancel Appointment',
-                            content:
-                                'Are you sure you want to cancel this appointment?',
+                            content: 'Are you sure you want to cancel this appointment?',
                             onConfirm: () {
                               _cancelAppointment(context, appointmentId);
                             },
@@ -266,8 +264,7 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
     );
   }
 
-  Future<void> _cancelAppointment(
-      BuildContext context, String appointmentId) async {
+  Future<void> _cancelAppointment(BuildContext context, String appointmentId) async {
     try {
       await FirebaseFirestore.instance
           .collection('bookings')
