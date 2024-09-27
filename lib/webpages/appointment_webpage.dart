@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
 import 'package:flutter/material.dart';
 
 class AppointmentWebPage extends StatefulWidget {
@@ -10,6 +11,7 @@ class AppointmentWebPage extends StatefulWidget {
 
 class _AppointmentWebPageState extends State<AppointmentWebPage> {
   late Stream<List<Map<String, dynamic>>> _appointmentStream;
+  final String currentUserId = FirebaseAuth.instance.currentUser!.uid; // Get the current user's ID
 
   @override
   void initState() {
@@ -20,6 +22,7 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
   void _setUpFirestoreListener() {
     _appointmentStream = FirebaseFirestore.instance
         .collection('bookings')
+        .where('userId', isEqualTo: currentUserId) // Filter by user ID
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -44,7 +47,7 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(25.0),
-        child: StreamBuilder<List<Map<String, dynamic>>>( 
+        child: StreamBuilder<List<Map<String, dynamic>>>(
           stream: _appointmentStream,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
