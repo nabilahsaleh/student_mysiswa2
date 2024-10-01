@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:student_mysiswa2/webpages/home_webpage.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import Firebase Auth
+import 'package:firebase_auth/firebase_auth.dart';
 
 class BookingWebPage extends StatefulWidget {
   const BookingWebPage({super.key});
@@ -29,20 +30,27 @@ class _BookingWebPageState extends State<BookingWebPage> {
 
   // Method to save booking data
   void _bookSlot() async {
-    final currentUser = FirebaseAuth.instance.currentUser; // Get the current user
+    final currentUser =
+        FirebaseAuth.instance.currentUser; // Get the current user
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('You need to be logged in to book an appointment.')),
+        const SnackBar(
+            content: Text('You need to be logged in to book an appointment.')),
       );
       return;
     }
 
     if (_formKey.currentState!.validate() && _selectedTimeSlot.isNotEmpty) {
+      // Get start and end times from the selected time slot
+      final startEndTimes =
+          _getStartAndEndTimes(_selectedTimeSlot, _selectedDate);
       final booking = {
         'name': _name,
         'phoneNumber': _phoneNumber,
         'date': _selectedDate,
         'timeSlot': _selectedTimeSlot,
+        'startTime': startEndTimes[0], // Add start time
+        'endTime': startEndTimes[1], // Add end time
         'status': 'scheduled',
         'userId': currentUser.uid, // Include user ID
       };
@@ -54,12 +62,55 @@ class _BookingWebPageState extends State<BookingWebPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Booking confirmed!')),
       );
+
+      // Navigate to HomeWebPage after booking
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => HomeWebPage()),
+      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
             content: Text('Please fill all fields and select a time slot')),
       );
     }
+  }
+
+  // Method to get start and end times from the selected time slot
+// Method to get start and end times from the selected time slot in 24-hour format
+  List<DateTime> _getStartAndEndTimes(String timeSlot, DateTime selectedDate) {
+    // Split the time slot into start and end times
+    final times = timeSlot.split(' - ');
+    final startTime = times[0].trim();
+    final endTime = times[1].trim();
+
+    // Parse the start and end times
+    final startHour = int.parse(startTime.split(':')[0]);
+    final startMinute = int.parse(startTime.split(':')[1]);
+    final endHour = int.parse(endTime.split(':')[0]);
+    final endMinute = int.parse(endTime.split(':')[1]);
+
+    // If the time is in the afternoon (after 12:00 PM), convert it to 24-hour format
+    final startDateTime = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      startHour < 8
+          ? startHour + 12
+          : startHour, // Convert afternoon times to 24-hour format
+      startMinute,
+    );
+
+    final endDateTime = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+      endHour < 8
+          ? endHour + 12
+          : endHour, // Convert afternoon times to 24-hour format
+      endMinute,
+    );
+
+    return [startDateTime, endDateTime];
   }
 
   @override
