@@ -55,8 +55,7 @@ class _BookingWebPageState extends State<BookingWebPage> {
         'status': 'scheduled',
         'notification': 'no',
         'userId': currentUser.uid, // Include user ID
-        'created_at':
-            FieldValue.serverTimestamp(), // Add the created_at timestamp
+        'created_at': FieldValue.serverTimestamp(),
       };
 
       // Save booking to Firestore
@@ -224,33 +223,37 @@ class _BookingWebPageState extends State<BookingWebPage> {
       Expanded(
         flex: isSmallScreen ? 0 : 1,
         child: Container(
-          color: Colors.white,
-          margin: const EdgeInsets.only(bottom: 20.0),
-          child: TableCalendar(
-            firstDay: DateTime.now(),
-            lastDay: DateTime(2100),
-            focusedDay: _selectedDate,
-            calendarFormat: _calendarFormat,
-            selectedDayPredicate: (day) {
-              return isSameDay(_selectedDate, day);
-            },
-            onDaySelected: (selectedDay, focusedDay) {
-              setState(() {
-                _selectedDate = selectedDay;
-              });
-            },
-            calendarStyle: const CalendarStyle(
-              todayDecoration: BoxDecoration(
-                color: Color(0xFFFFCBCB),
-                shape: BoxShape.circle,
+            color: Colors.white,
+            margin: const EdgeInsets.only(bottom: 20.0),
+            child: TableCalendar(
+              firstDay: DateTime.now(),
+              lastDay: DateTime(2100),
+              focusedDay: _selectedDate,
+              calendarFormat: _calendarFormat,
+              selectedDayPredicate: (day) {
+                return isSameDay(_selectedDate, day);
+              },
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _selectedDate = selectedDay;
+                });
+              },
+              enabledDayPredicate: (day) {
+                // Disable weekends (Saturday and Sunday)
+                return day.weekday != DateTime.saturday &&
+                    day.weekday != DateTime.sunday;
+              },
+              calendarStyle: const CalendarStyle(
+                todayDecoration: BoxDecoration(
+                  color: Color(0xFFFFCBCB),
+                  shape: BoxShape.circle,
+                ),
+                selectedDecoration: BoxDecoration(
+                  color: Color.fromARGB(255, 247, 108, 108),
+                  shape: BoxShape.circle,
+                ),
               ),
-              selectedDecoration: BoxDecoration(
-                color: Color.fromARGB(255, 247, 108, 108),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-        ),
+            )),
       ),
       if (!isSmallScreen) const SizedBox(width: 20),
 
