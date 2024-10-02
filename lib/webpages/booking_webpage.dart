@@ -28,7 +28,7 @@ class _BookingWebPageState extends State<BookingWebPage> {
     '3:30 - 4:30',
   ];
 
-  // Method to save booking data
+// Method to save booking data
   void _bookSlot() async {
     final currentUser =
         FirebaseAuth.instance.currentUser; // Get the current user
@@ -44,6 +44,7 @@ class _BookingWebPageState extends State<BookingWebPage> {
       // Get start and end times from the selected time slot
       final startEndTimes =
           _getStartAndEndTimes(_selectedTimeSlot, _selectedDate);
+
       final booking = {
         'name': _name,
         'phoneNumber': _phoneNumber,
@@ -52,7 +53,10 @@ class _BookingWebPageState extends State<BookingWebPage> {
         'startTime': startEndTimes[0], // Add start time
         'endTime': startEndTimes[1], // Add end time
         'status': 'scheduled',
+        'notification': 'no',
         'userId': currentUser.uid, // Include user ID
+        'created_at':
+            FieldValue.serverTimestamp(), // Add the created_at timestamp
       };
 
       // Save booking to Firestore
@@ -75,8 +79,7 @@ class _BookingWebPageState extends State<BookingWebPage> {
     }
   }
 
-  // Method to get start and end times from the selected time slot
-// Method to get start and end times from the selected time slot in 24-hour format
+  // Method to get start and end times from the selected time slot in 24-hour format
   List<DateTime> _getStartAndEndTimes(String timeSlot, DateTime selectedDate) {
     // Split the time slot into start and end times
     final times = timeSlot.split(' - ');
