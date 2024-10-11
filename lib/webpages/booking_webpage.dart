@@ -5,7 +5,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 
-
 class BookingWebPage extends StatefulWidget {
   const BookingWebPage({super.key});
 
@@ -75,69 +74,69 @@ class _BookingWebPageState extends State<BookingWebPage> {
 
   // Method to save booking data
 // Method to save booking data
-void _bookSlot() async {
-  final currentUser = FirebaseAuth.instance.currentUser;
-  if (currentUser == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-          content: Text('You need to be logged in to book an appointment.')),
-    );
-    return;
-  }
-
-  if (_formKey.currentState!.validate()) {
-    // Parse the selected time to get start and end times
-    String startTime;
-    String endTime;
-
-    if (_selectedSession == 'Morning') {
-      startTime = _selectedTime!.split(' - ')[0]; // Get the start time
-      endTime = _selectedTime!.split(' - ')[1]; // Get the end time
-    } else {
-      startTime = _selectedTime!.split(' - ')[0]; // Get the start time
-      endTime = _selectedTime!.split(' - ')[1]; // Get the end time
+  void _bookSlot() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('You need to be logged in to book an appointment.')),
+      );
+      return;
     }
 
-    // Convert the 12-hour format to 24-hour format
-    DateTime startDateTime = DateFormat("h:mm a").parse(startTime);
-    DateTime endDateTime = DateFormat("h:mm a").parse(endTime);
+    if (_formKey.currentState!.validate()) {
+      // Parse the selected time to get start and end times
+      String startTime;
+      String endTime;
 
-    // Format to 24-hour format
-    String startTime24 = DateFormat('HH:mm').format(startDateTime);
-    String endTime24 = DateFormat('HH:mm').format(endDateTime);
+      if (_selectedSession == 'Morning') {
+        startTime = _selectedTime!.split(' - ')[0]; // Get the start time
+        endTime = _selectedTime!.split(' - ')[1]; // Get the end time
+      } else {
+        startTime = _selectedTime!.split(' - ')[0]; // Get the start time
+        endTime = _selectedTime!.split(' - ')[1]; // Get the end time
+      }
 
-    final booking = {
-      'name': _name,
-      'phoneNumber': _phoneNumber,
-      'studentId': _studentId,
-      'faculty': _selectedFaculty,
-      'purpose': _selectedPurpose,
-      'session': _selectedSession,
-      'date': _selectedDate,
-      'time': _selectedTime,
-      'startTime': startTime24,
-      'endTime': endTime24,
-      'status': 'scheduled',
-      'notification': 'no',
-      'userId': currentUser.uid,
-      'created_at': FieldValue.serverTimestamp(),
-    };
+      // Convert the 12-hour format to 24-hour format
+      DateTime startDateTime = DateFormat("h:mm a").parse(startTime);
+      DateTime endDateTime = DateFormat("h:mm a").parse(endTime);
 
-    await FirebaseFirestore.instance.collection('bookings').add(booking);
+      // Format to 24-hour format
+      String startTime24 = DateFormat('HH:mm').format(startDateTime);
+      String endTime24 = DateFormat('HH:mm').format(endDateTime);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Booking confirmed!')),
-    );
+      final booking = {
+        'name': _name,
+        'phoneNumber': _phoneNumber,
+        'studentId': _studentId,
+        'faculty': _selectedFaculty,
+        'purpose': _selectedPurpose,
+        'session': _selectedSession,
+        'date': _selectedDate,
+        'time': _selectedTime,
+        'startTime': startTime24,
+        'endTime': endTime24,
+        'status': 'scheduled',
+        'notification': 'no',
+        'userId': currentUser.uid,
+        'created_at': FieldValue.serverTimestamp(),
+      };
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => HomeWebPage()),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please fill all fields.')),
-    );
+      await FirebaseFirestore.instance.collection('bookings').add(booking);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Booking confirmed!')),
+      );
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => HomeWebPage()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please fill all fields.')),
+      );
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -329,7 +328,7 @@ void _bookSlot() async {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: _buildBookingComponents(isSmallScreen),
                         ),
-                  
+
                   // Time slot dropdown
                   const SizedBox(height: 20),
                   if (_selectedSession.isNotEmpty)
