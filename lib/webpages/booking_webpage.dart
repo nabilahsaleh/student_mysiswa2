@@ -18,6 +18,10 @@ class _BookingWebPageState extends State<BookingWebPage> {
   String _selectedTimeSlot = '';
   String _name = '';
   String _phoneNumber = '';
+  String _studentId = ''; 
+  String _selectedFaculty = '';
+  String _selectedPurpose = '';
+  String _selectedSession = '';
 
   List<String> timeSlots = [
     '8:30 - 9:30',
@@ -28,10 +32,32 @@ class _BookingWebPageState extends State<BookingWebPage> {
     '3:30 - 4:30',
   ];
 
-// Method to save booking data
+  // List of faculties for dropdown
+  List<String> faculties = [
+    'Faculty of Science',
+    'Faculty of Engineering',
+    'Faculty of Arts',
+    'Faculty of Medicine',
+    'Faculty of Business',
+  ];
+
+  // List of purposes for dropdown
+  List<String> purposes = [
+    'Card Renewal',
+    'Card replacement',
+    'Damaged Card',
+    'Other',
+  ];
+
+  // List of sessions for dropdown
+  List<String> sessions = [
+    'Morning',
+    'Evening',
+  ];
+
+  // Method to save booking data
   void _bookSlot() async {
-    final currentUser =
-        FirebaseAuth.instance.currentUser; // Get the current user
+    final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -41,32 +67,32 @@ class _BookingWebPageState extends State<BookingWebPage> {
     }
 
     if (_formKey.currentState!.validate() && _selectedTimeSlot.isNotEmpty) {
-      // Get start and end times from the selected time slot
       final startEndTimes =
           _getStartAndEndTimes(_selectedTimeSlot, _selectedDate);
 
       final booking = {
         'name': _name,
         'phoneNumber': _phoneNumber,
+        'studentId': _studentId,
+        'faculty': _selectedFaculty,
+        'purpose': _selectedPurpose,
+        'session': _selectedSession,
         'date': _selectedDate,
         'timeSlot': _selectedTimeSlot,
-        'startTime': startEndTimes[0], // Add start time
-        'endTime': startEndTimes[1], // Add end time
+        'startTime': startEndTimes[0],
+        'endTime': startEndTimes[1],
         'status': 'scheduled',
         'notification': 'no',
-        'userId': currentUser.uid, // Include user ID
+        'userId': currentUser.uid,
         'created_at': FieldValue.serverTimestamp(),
       };
 
-      // Save booking to Firestore
       await FirebaseFirestore.instance.collection('bookings').add(booking);
 
-      // Show confirmation message
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Booking confirmed!')),
       );
 
-      // Navigate to HomeWebPage after booking
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => HomeWebPage()),
       );
@@ -80,25 +106,20 @@ class _BookingWebPageState extends State<BookingWebPage> {
 
   // Method to get start and end times from the selected time slot in 24-hour format
   List<DateTime> _getStartAndEndTimes(String timeSlot, DateTime selectedDate) {
-    // Split the time slot into start and end times
     final times = timeSlot.split(' - ');
     final startTime = times[0].trim();
     final endTime = times[1].trim();
 
-    // Parse the start and end times
     final startHour = int.parse(startTime.split(':')[0]);
     final startMinute = int.parse(startTime.split(':')[1]);
     final endHour = int.parse(endTime.split(':')[0]);
     final endMinute = int.parse(endTime.split(':')[1]);
 
-    // If the time is in the afternoon (after 12:00 PM), convert it to 24-hour format
     final startDateTime = DateTime(
       selectedDate.year,
       selectedDate.month,
       selectedDate.day,
-      startHour < 8
-          ? startHour + 12
-          : startHour, // Convert afternoon times to 24-hour format
+      startHour < 8 ? startHour + 12 : startHour,
       startMinute,
     );
 
@@ -106,9 +127,7 @@ class _BookingWebPageState extends State<BookingWebPage> {
       selectedDate.year,
       selectedDate.month,
       selectedDate.day,
-      endHour < 8
-          ? endHour + 12
-          : endHour, // Convert afternoon times to 24-hour format
+      endHour < 8 ? endHour + 12 : endHour,
       endMinute,
     );
 
@@ -137,43 +156,162 @@ class _BookingWebPageState extends State<BookingWebPage> {
             child: Form(
               key: _formKey,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  // Text fields for Name and Phone Number
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Full Name',
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) {
-                      setState(() {
-                        _name = value;
-                      });
-                    },
-                    validator: (value) {
-                      return value!.isEmpty ? 'Please enter your name' : null;
-                    },
+                  // Create two columns for form fields
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          children: [
+                            // Full Name field
+                            TextFormField(
+                              decoration: const InputDecoration(
+                                labelText: 'Full Name',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  _name = value;
+                                });
+                              },
+                              validator: (value) {
+                                return value!.isEmpty
+                                    ? 'Please enter your name'
+                                    : null;
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            // Phone Number field
+                            TextFormField(
+                              decoration: const InputDecoration(
+                                labelText: 'Phone Number',
+                                border: OutlineInputBorder(),
+                              ),
+                              keyboardType: TextInputType.phone,
+                              onChanged: (value) {
+                                setState(() {
+                                  _phoneNumber = value;
+                                });
+                              },
+                              validator: (value) {
+                                return value!.isEmpty
+                                    ? 'Please enter your phone number'
+                                    : null;
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            // Faculty dropdown
+                            DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                labelText: 'Select Faculty',
+                                border: OutlineInputBorder(),
+                              ),
+                              value: _selectedFaculty.isNotEmpty
+                                  ? _selectedFaculty
+                                  : null,
+                              onChanged: (newValue) {
+                                setState(() {
+                                  _selectedFaculty = newValue!;
+                                });
+                              },
+                              items: faculties.map((faculty) {
+                                return DropdownMenuItem<String>(
+                                  value: faculty,
+                                  child: Text(faculty),
+                                );
+                              }).toList(),
+                              validator: (value) {
+                                return value == null
+                                    ? 'Please select your faculty'
+                                    : null;
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 20),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            // Student ID field
+                            TextFormField(
+                              decoration: const InputDecoration(
+                                labelText: 'Student ID',
+                                border: OutlineInputBorder(),
+                              ),
+                              onChanged: (value) {
+                                setState(() {
+                                  _studentId = value;
+                                });
+                              },
+                              validator: (value) {
+                                return value!.isEmpty
+                                    ? 'Please enter your Student ID'
+                                    : null;
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            // Purpose dropdown
+                            DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                labelText: 'Purpose',
+                                border: OutlineInputBorder(),
+                              ),
+                              value: _selectedPurpose.isEmpty
+                                  ? null
+                                  : _selectedPurpose,
+                              items: purposes.map((String purpose) {
+                                return DropdownMenuItem<String>(
+                                  value: purpose,
+                                  child: Text(purpose),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedPurpose = value!;
+                                });
+                              },
+                              validator: (value) {
+                                return value == null
+                                    ? 'Please select a purpose'
+                                    : null;
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                            // Session dropdown
+                            DropdownButtonFormField<String>(
+                              decoration: const InputDecoration(
+                                labelText: 'Session',
+                                border: OutlineInputBorder(),
+                              ),
+                              value: _selectedSession.isEmpty
+                                  ? null
+                                  : _selectedSession,
+                              items: sessions.map((String session) {
+                                return DropdownMenuItem<String>(
+                                  value: session,
+                                  child: Text(session),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setState(() {
+                                  _selectedSession = value!;
+                                });
+                              },
+                              validator: (value) {
+                                return value == null
+                                    ? 'Please select a session'
+                                    : null;
+                              },
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                  TextFormField(
-                    decoration: const InputDecoration(
-                      labelText: 'Phone Number',
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.phone,
-                    onChanged: (value) {
-                      setState(() {
-                        _phoneNumber = value;
-                      });
-                    },
-                    validator: (value) {
-                      return value!.isEmpty
-                          ? 'Please enter your phone number'
-                          : null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
 
                   // For large screens, show calendar and time slot side by side
                   isSmallScreen
