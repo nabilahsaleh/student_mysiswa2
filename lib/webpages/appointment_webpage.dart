@@ -47,7 +47,7 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(25.0),
-        child: StreamBuilder<List<Map<String, dynamic>>>(
+        child: StreamBuilder<List<Map<String, dynamic>>>( 
           stream: _appointmentStream,
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
@@ -85,7 +85,8 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
                     _buildAppointmentCard(
                       context: context,
                       date: (appointment['date'] as Timestamp).toDate(),
-                      time: appointment['timeSlot'],
+                      time: appointment['time'], // Added location
+                      purpose: appointment['purpose'], // Added purpose
                       status: appointment['status'],
                       isUpcoming: true,
                       appointmentId: appointment['id'],
@@ -102,7 +103,8 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
                     _buildAppointmentCard(
                       context: context,
                       date: (appointment['date'] as Timestamp).toDate(),
-                      time: appointment['timeSlot'],
+                      time: appointment['time'],
+                      purpose: appointment['purpose'],
                       status: appointment['status'],
                       isUpcoming: false,
                       appointmentId: appointment['id'],
@@ -119,7 +121,8 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
   Widget _buildAppointmentCard({
     required BuildContext context,
     required DateTime date,
-    required String time,
+    required String time, 
+    required String purpose,
     required String status,
     required bool isUpcoming,
     required String appointmentId,
@@ -172,8 +175,13 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
                 ),
                 const SizedBox(height: 5),
                 const Text(
-                  'Location: Banggunan Sarjana, Bilik Peralatan Komputer',
+                  'Location: Bangunan Sarjana, Tingkat 2, Bilik Peralatan Komputer',
                   style: TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  'Purpose: $purpose', // Displaying purpose
+                  style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 5),
                 Text(

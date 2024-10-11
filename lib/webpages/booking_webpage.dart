@@ -3,6 +3,8 @@ import 'package:student_mysiswa2/webpages/home_webpage.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
+
 
 class BookingWebPage extends StatefulWidget {
   const BookingWebPage({super.key});
@@ -15,22 +17,13 @@ class _BookingWebPageState extends State<BookingWebPage> {
   final _formKey = GlobalKey<FormState>();
   DateTime _selectedDate = DateTime.now();
   CalendarFormat _calendarFormat = CalendarFormat.month;
-  String _selectedTimeSlot = '';
   String _name = '';
   String _phoneNumber = '';
-  String _studentId = ''; 
+  String _studentId = '';
   String _selectedFaculty = '';
   String _selectedPurpose = '';
   String _selectedSession = '';
-
-  List<String> timeSlots = [
-    '8:30 - 9:30',
-    '9:30 - 10:30',
-    '10:30 - 11:30',
-    '11:30 - 12:30',
-    '2:30 - 3:30',
-    '3:30 - 4:30',
-  ];
+  String? _selectedTime;
 
   // List of faculties for dropdown
   List<String> faculties = [
@@ -44,7 +37,7 @@ class _BookingWebPageState extends State<BookingWebPage> {
   // List of purposes for dropdown
   List<String> purposes = [
     'Card Renewal',
-    'Card replacement',
+    'Card Replacement',
     'Damaged Card',
     'Other',
   ];
@@ -55,84 +48,96 @@ class _BookingWebPageState extends State<BookingWebPage> {
     'Evening',
   ];
 
+  List<String> morningTimeSlots = [
+    '8:30 AM - 8:45 AM',
+    '8:45 AM - 9:00 AM',
+    '9:00 AM - 9:15 AM',
+    '9:15 AM - 9:30 AM',
+    '9:30 AM - 9:45 AM',
+    '9:45 AM - 10:00 AM',
+    '10:00 AM - 10:15 AM',
+    '10:15 AM - 10:30 AM',
+    '10:30 AM - 10:45 AM',
+    '10:45 AM - 11:00 AM',
+    '11:00 AM - 11:15 AM',
+    '11:15 AM - 11:30 AM',
+    '11:30 AM - 11:45 AM',
+  ];
+
+  List<String> eveningTimeSlots = [
+    '3:00 PM - 3:15 PM',
+    '3:15 PM - 3:30 PM',
+    '3:30 PM - 3:45 PM',
+    '3:45 PM - 4:00 PM',
+    '4:00 PM - 4:15 PM',
+    '4:15 PM - 4:30 PM',
+  ];
+
   // Method to save booking data
-  void _bookSlot() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('You need to be logged in to book an appointment.')),
-      );
-      return;
-    }
+// Method to save booking data
+void _bookSlot() async {
+  final currentUser = FirebaseAuth.instance.currentUser;
+  if (currentUser == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+          content: Text('You need to be logged in to book an appointment.')),
+    );
+    return;
+  }
 
-    if (_formKey.currentState!.validate() && _selectedTimeSlot.isNotEmpty) {
-      final startEndTimes =
-          _getStartAndEndTimes(_selectedTimeSlot, _selectedDate);
+  if (_formKey.currentState!.validate()) {
+    // Parse the selected time to get start and end times
+    String startTime;
+    String endTime;
 
-      final booking = {
-        'name': _name,
-        'phoneNumber': _phoneNumber,
-        'studentId': _studentId,
-        'faculty': _selectedFaculty,
-        'purpose': _selectedPurpose,
-        'session': _selectedSession,
-        'date': _selectedDate,
-        'timeSlot': _selectedTimeSlot,
-        'startTime': startEndTimes[0],
-        'endTime': startEndTimes[1],
-        'status': 'scheduled',
-        'notification': 'no',
-        'userId': currentUser.uid,
-        'created_at': FieldValue.serverTimestamp(),
-      };
-
-      await FirebaseFirestore.instance.collection('bookings').add(booking);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Booking confirmed!')),
-      );
-
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => HomeWebPage()),
-      );
+    if (_selectedSession == 'Morning') {
+      startTime = _selectedTime!.split(' - ')[0]; // Get the start time
+      endTime = _selectedTime!.split(' - ')[1]; // Get the end time
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Please fill all fields and select a time slot')),
-      );
+      startTime = _selectedTime!.split(' - ')[0]; // Get the start time
+      endTime = _selectedTime!.split(' - ')[1]; // Get the end time
     }
-  }
 
-  // Method to get start and end times from the selected time slot in 24-hour format
-  List<DateTime> _getStartAndEndTimes(String timeSlot, DateTime selectedDate) {
-    final times = timeSlot.split(' - ');
-    final startTime = times[0].trim();
-    final endTime = times[1].trim();
+    // Convert the 12-hour format to 24-hour format
+    DateTime startDateTime = DateFormat("h:mm a").parse(startTime);
+    DateTime endDateTime = DateFormat("h:mm a").parse(endTime);
 
-    final startHour = int.parse(startTime.split(':')[0]);
-    final startMinute = int.parse(startTime.split(':')[1]);
-    final endHour = int.parse(endTime.split(':')[0]);
-    final endMinute = int.parse(endTime.split(':')[1]);
+    // Format to 24-hour format
+    String startTime24 = DateFormat('HH:mm').format(startDateTime);
+    String endTime24 = DateFormat('HH:mm').format(endDateTime);
 
-    final startDateTime = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      startHour < 8 ? startHour + 12 : startHour,
-      startMinute,
+    final booking = {
+      'name': _name,
+      'phoneNumber': _phoneNumber,
+      'studentId': _studentId,
+      'faculty': _selectedFaculty,
+      'purpose': _selectedPurpose,
+      'session': _selectedSession,
+      'date': _selectedDate,
+      'time': _selectedTime,
+      'startTime': startTime24,
+      'endTime': endTime24,
+      'status': 'scheduled',
+      'notification': 'no',
+      'userId': currentUser.uid,
+      'created_at': FieldValue.serverTimestamp(),
+    };
+
+    await FirebaseFirestore.instance.collection('bookings').add(booking);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Booking confirmed!')),
     );
 
-    final endDateTime = DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      endHour < 8 ? endHour + 12 : endHour,
-      endMinute,
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (context) => HomeWebPage()),
     );
-
-    return [startDateTime, endDateTime];
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Please fill all fields.')),
+    );
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -298,6 +303,8 @@ class _BookingWebPageState extends State<BookingWebPage> {
                               onChanged: (value) {
                                 setState(() {
                                   _selectedSession = value!;
+                                  _selectedTime =
+                                      null; // Reset time when session changes
                                 });
                               },
                               validator: (value) {
@@ -313,7 +320,7 @@ class _BookingWebPageState extends State<BookingWebPage> {
                     ],
                   ),
 
-                  // For large screens, show calendar and time slot side by side
+                  // For large screens, show calendar
                   isSmallScreen
                       ? Column(
                           children: _buildBookingComponents(isSmallScreen),
@@ -322,7 +329,36 @@ class _BookingWebPageState extends State<BookingWebPage> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: _buildBookingComponents(isSmallScreen),
                         ),
-
+                  
+                  // Time slot dropdown
+                  const SizedBox(height: 20),
+                  if (_selectedSession.isNotEmpty)
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: 'Select Time',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: _selectedTime,
+                      items: (_selectedSession == 'Morning'
+                              ? morningTimeSlots
+                              : eveningTimeSlots)
+                          .map((timeSlot) {
+                        return DropdownMenuItem<String>(
+                          value: timeSlot,
+                          child: Text(timeSlot),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedTime = value!;
+                        });
+                      },
+                      validator: (value) {
+                        return value == null
+                            ? 'Please select a time slot'
+                            : null;
+                      },
+                    ),
                   // Booking button
                   Center(
                     child: Padding(
@@ -362,7 +398,7 @@ class _BookingWebPageState extends State<BookingWebPage> {
         flex: isSmallScreen ? 0 : 1,
         child: Container(
             color: Colors.white,
-            margin: const EdgeInsets.only(bottom: 20.0),
+            margin: const EdgeInsets.only(right: 40, left: 40, top: 15),
             child: TableCalendar(
               firstDay: DateTime.now(),
               lastDay: DateTime(2100),
@@ -390,58 +426,13 @@ class _BookingWebPageState extends State<BookingWebPage> {
                   color: Color.fromARGB(255, 247, 108, 108),
                   shape: BoxShape.circle,
                 ),
+                weekendTextStyle: TextStyle(color: Colors.red),
+              ),
+              headerStyle: const HeaderStyle(
+                titleCentered: true,
+                formatButtonVisible: false,
               ),
             )),
-      ),
-      if (!isSmallScreen) const SizedBox(width: 20),
-
-      // Time slots on the right
-      Expanded(
-        flex: isSmallScreen ? 0 : 1,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 20.0),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
-              childAspectRatio: 3,
-            ),
-            itemCount: timeSlots.length,
-            itemBuilder: (context, index) {
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _selectedTimeSlot = timeSlots[index];
-                  });
-                },
-                child: Card(
-                  color: _selectedTimeSlot == timeSlots[index]
-                      ? const Color(0xFF121481)
-                      : Colors.white,
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(
-                      timeSlots[index],
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: _selectedTimeSlot == timeSlots[index]
-                            ? Colors.white
-                            : Colors.black,
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
       ),
     ];
   }
