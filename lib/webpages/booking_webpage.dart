@@ -72,8 +72,8 @@ class _BookingWebPageState extends State<BookingWebPage> {
     '4:15 PM - 4:30 PM',
   ];
 
+
   // Method to save booking data
-// Method to save booking data
   void _bookSlot() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
