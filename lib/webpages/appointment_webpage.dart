@@ -175,7 +175,7 @@ class _AppointmentWebPageState extends State<AppointmentWebPage> {
                 ),
                 const SizedBox(height: 5),
                 const Text(
-                  'Location: Bangunan Sarjana, Tingkat 2, Bilik Peralatan Komputer',
+                  'Location: Bangunan Sarjana, Tingkat 2, Pejabat Infostruktur 2',
                   style: TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 5),

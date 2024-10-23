@@ -26,11 +26,9 @@ class _BookingWebPageState extends State<BookingWebPage> {
 
   // List of faculties for dropdown
   List<String> faculties = [
-    'Faculty of Science',
-    'Faculty of Engineering',
-    'Faculty of Arts',
-    'Faculty of Medicine',
-    'Faculty of Business',
+    'Kolej Pengajian Pengkomputeran, Informatik Dan Media (KPPIM)',
+    'Fakulti Pengurusan dan Perniagaan',
+    'Fakulti Sains Pentadbiran dan Pengajian Polisi',
   ];
 
   // List of purposes for dropdown
