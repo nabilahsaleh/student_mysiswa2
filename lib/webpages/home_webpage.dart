@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart'; // Needed for clipboard functionality
+import 'package:flutter/services.dart';
 import 'package:student_mysiswa2/webpages/appointment_webpage.dart';
 import 'package:student_mysiswa2/webpages/booking_webpage.dart';
-import 'package:url_launcher/url_launcher.dart'; // Needed to open WhatsApp
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:html' as html; // Import for web
 
 class HomeWebPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    _checkMissedAppointments(); // Call the function to check missed appointments
+    _checkMissedAppointments();
 
     return DefaultTabController(
-      length: 2, // Number of tabs
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Center(child: Text('Kad MySiswa')),
@@ -33,27 +35,34 @@ class HomeWebPage extends StatelessWidget {
           onPressed: () {
             _showAdminWhatsAppDialog(context);
           },
-          child: const Icon(Icons.call), // You can use Icons.help or Icons.call
+          child: const Icon(Icons.call),
           backgroundColor: Colors.blue,
         ),
       ),
     );
   }
 
-  // Function to open WhatsApp with the admin's number
-  Future<void> _openWhatsApp() async {
-    final whatsappNumber = "093515208";
-    final whatsappUrl = "https://wa.me/60$whatsappNumber"; // WhatsApp API link
-    if (await canLaunch(whatsappUrl)) {
-      await launch(whatsappUrl); // Open WhatsApp
+  Future<void> _openWhatsApp(BuildContext context) async {
+    final whatsappNumber = "93515208";
+    final whatsappUrl = "https://wa.me/60$whatsappNumber";
+
+    if (kIsWeb) {
+      // Use `window.open` for web to open in new tab
+      html.window.open(whatsappUrl, '_blank');
     } else {
-      throw "Could not launch WhatsApp";
+      final uri = Uri.parse(whatsappUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Could not launch WhatsApp")),
+        );
+      }
     }
   }
 
-  // Function to show the dialog with WhatsApp number
   void _showAdminWhatsAppDialog(BuildContext context) {
-    final adminNumber = "093515208"; // Admin's WhatsApp number
+    final adminNumber = "093515208";
 
     showDialog(
       context: context,
@@ -74,24 +83,23 @@ class HomeWebPage extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // WhatsApp Icon
                   IconButton(
                     icon: Image.asset(
-                        'assets/whatsapp_icon.png',
-                        height: 35,
-                      ),
-                    onPressed: _openWhatsApp,
+                      'assets/whatsapp_icon.png',
+                      height: 35,
+                    ),
+                    onPressed: () => _openWhatsApp(context),
                     tooltip: 'Open in WhatsApp',
                     iconSize: 25,
                   ),
                   const SizedBox(width: 20),
-                  // Copy Icon
                   IconButton(
                     icon: const Icon(Icons.copy, color: Colors.blue),
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: adminNumber));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("Number copied to clipboard")),
+                        const SnackBar(
+                            content: Text("Number copied to clipboard")),
                       );
                     },
                     tooltip: 'Copy number',
@@ -104,7 +112,7 @@ class HomeWebPage extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Close the dialog
+                Navigator.of(context).pop();
               },
               child: const Text("Close"),
             ),
@@ -117,32 +125,23 @@ class HomeWebPage extends StatelessWidget {
   void _checkMissedAppointments() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      return; // Exit if the user is not logged in
+      return;
     }
 
-    // Get the current time
     final now = DateTime.now();
 
-    // Query for scheduled appointments
     final QuerySnapshot appointmentsSnapshot = await FirebaseFirestore.instance
         .collection('bookings')
-        .where('userId', isEqualTo: currentUser.uid) // Filter by current user
-        .where('status', isEqualTo: 'scheduled') // Only get scheduled appointments
+        .where('userId', isEqualTo: currentUser.uid)
+        .where('status', isEqualTo: 'scheduled')
         .get();
 
     for (var doc in appointmentsSnapshot.docs) {
       final appointmentData = doc.data() as Map<String, dynamic>;
 
-      // Get the end time of the appointment
-      final endTime = (appointmentData['endTime'] as Timestamp).toDate(); // Convert to DateTime
+      final endTime = (appointmentData['endTime'] as Timestamp).toDate();
 
-      // Debugging output
-      print('Current Time: $now');
-      print('End Time: $endTime');
-
-      // Check if the appointment has passed (date and time)
       if (now.isAfter(endTime)) {
-        // Update the appointment status to 'missed'
         await FirebaseFirestore.instance
             .collection('bookings')
             .doc(doc.id)

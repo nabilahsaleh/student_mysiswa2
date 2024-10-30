@@ -25,8 +25,8 @@ class _LoginWebPageState extends State<LoginWebPage> {
         return;
       }
 
-      // Check if the email ends with '@student.kptm.edu.my' before proceeding
-      if (googleUser.email.endsWith('@student.kptm.edu.my')) {
+      // Check if the email ends with '@student.uitm.edu.my' before proceeding
+      if (googleUser.email.endsWith('@student.uitm.edu.my') || googleUser.email == 'itraub@uitm.edu.my') {
         // Obtain the authentication details from the Google account
         GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 

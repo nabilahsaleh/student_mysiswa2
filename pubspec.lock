@@ -81,6 +81,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.8"
+  enhanced_url_launcher_platform_interface:
+    dependency: transitive
+    description:
+      name: enhanced_url_launcher_platform_interface
+      sha256: dbf7322e0b98bbbfdef61dd874055286deda2366d58e8a9f830b67ab8f67bc9d
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.4"
+  enhanced_url_launcher_web:
+    dependency: "direct main"
+    description:
+      name: enhanced_url_launcher_web
+      sha256: "8de93ead2134b6d309d0f49e995f4f3275287a960c04510e98c6ca2ee7d5dcb4"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.18"
   fake_async:
     dependency: transitive
     description:
